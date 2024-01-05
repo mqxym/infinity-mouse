@@ -8,6 +8,7 @@ Python script that can move the mouse in 3 different ways
 ## Options
 - Start the script with a command line paremeter 1-3
 - Start the script and enter the preferred number for movement style
+- Adjust the SLEEP_MIN and SLEEP_MAX values 
 
 ## Aim of the project
 - Learn automation like mouse movements
