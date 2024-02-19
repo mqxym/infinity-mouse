@@ -4,9 +4,10 @@ import random
 import time
 import math
 import Quartz
+from screeninfo import get_monitors
 
-SLEEP_MIN = 15
-SLEEP_MAX = 30
+SLEEP_MIN = 45
+SLEEP_MAX = 60
 
 def sleep_print (seconds):
     print ("Sleeping for: " + str(seconds) + " seconds...")
@@ -120,23 +121,19 @@ def infinity_movement():
 
         sleep_print(random.randint(SLEEP_MIN,SLEEP_MAX))
 
-def main ():
+def main():
+    actions = {1: circle_movement, 2: random_movement, 3: infinity_movement}
+    monitors = get_monitors()
+    
     if len(sys.argv) > 1:
         try:
             choice = int(sys.argv[1])
-            
-            if choice == 1:
-                circle_movement()
-            elif choice == 2:
-                random_movement()
-            elif choice == 3:
-                infinity_movement()
+            if choice in actions:
+                actions[choice]()
             else:
                 print("Invalid choice. Please select a valid option (1-3).")
-                return
         except ValueError:
             print("Invalid input. Please enter a valid number (1-3) as a command-line parameter.")
-            return
     else:
         while True:
             print("Choose an option:")
@@ -144,16 +141,10 @@ def main ():
             print("2. Random Movement")
             print("3. Infinity Movement")
             print("4. Exit")
-            
             try:
                 choice = int(input("Enter the number of your choice: "))
-                
-                if choice == 1:
-                    circle_movement()
-                elif choice == 2:
-                    random_movement()
-                elif choice == 3:
-                    infinity_movement()
+                if choice in actions:
+                    actions[choice]()
                 elif choice == 4:
                     print("Exiting the program.")
                     exit()
@@ -161,6 +152,5 @@ def main ():
                     print("Invalid choice. Please select a valid option (1-4).")
             except ValueError:
                 print("Invalid input. Please enter a valid number (1-4).")
-
 if __name__ == "__main__":
     main()
