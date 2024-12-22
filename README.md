@@ -30,3 +30,8 @@ python run.py # You may need to allow system access permissions for your termina
 
 - Learn automation like mouse movements and processing of inputs and HMIs
 - Learn pattern creation with sinus functions for the infinity movement pattern
+
+## Future Additions
+
+- Linux and Windows support?
+- CLI parameter controls?
