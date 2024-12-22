@@ -1,0 +1,3 @@
+pyobjc-framework-Quartz
+pyautogui
+screeninfo

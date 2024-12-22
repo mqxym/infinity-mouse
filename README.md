@@ -1,20 +1,32 @@
 # infinity-mouse
 
-Python script that can move the mouse in 3 different ways
+![infinity mouse](https://mqxym.de/assets/infinity_mouse.jpg)
+
+Python script that moves the mouse after a set inactivity timeout.
 
 ## Requirements
 
-- MacOS
-- Libraries: Quartz, PyAutoGui, screeninfo
+- MacOS with Python3.12+
+- Packages: see `requirements.txt`
+
+## Installation
+
+```bash
+
+git clone https://github.com/mqxym/infinity-mouse
+cd infinity-mouse && python3 -m venv .venv/ && source .venv/bin/activate && pip install -r requirements.txt
+
+# Run the script
+python run.py # You may need to allow system access permissions for your terminal app
+
+# Press CTRL+C to exit the script
+```
 
 ## Options
 
-- Start the script with a command line paremeter 1-3
-- Start the script and enter the preferred number for movement style
-- Adjust the SLEEP_MIN and SLEEP_MAX values
+- Adjust the `INACTIVITY_TIMEOUT_MIN` and `INACTIVITY_TIMEOUT_MAX` values in the script
 
-## Aim of the project
+## Project Goals
 
-- Learn automation like mouse movements
-- Learn pattern creation with sinus functions for a circle or the infinity sign pattern
-- Process console parameters
+- Learn automation like mouse movements and processing of inputs and HMIs
+- Learn pattern creation with sinus functions for the infinity movement pattern
