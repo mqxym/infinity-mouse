@@ -47,4 +47,3 @@ python run.py -h
 ## Future Additions
 
 - Linux and Windows support?
-- CLI parameter controls?
