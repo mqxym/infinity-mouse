@@ -42,6 +42,7 @@ python run.py -h
 
 - Learn automation like mouse movements and processing of inputs and HMIs
 - Learn pattern creation with sinus functions for the infinity movement pattern
+- Build and test CI/CD workflows
 
 ## Future Additions
 
