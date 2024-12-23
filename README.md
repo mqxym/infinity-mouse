@@ -24,7 +24,19 @@ python run.py # You may need to allow system access permissions for your termina
 
 ## Options
 
-- Adjust the `INACTIVITY_TIMEOUT_MIN` and `INACTIVITY_TIMEOUT_MAX` values in the script
+- Adjust the `INACTIVITY_TIMEOUT_MIN` and `INACTIVITY_TIMEOUT_MAX` values in the script or use CLI parameters:
+
+```bash
+# Run the script with min-max timeout in seconds
+python run.py 80-120
+
+# Test the script
+python run.py --test
+
+# View options
+python run.py -h
+
+```
 
 ## Project Goals
 
