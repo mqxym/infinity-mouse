@@ -6,10 +6,27 @@ Python script that moves the mouse after a set inactivity timeout.
 
 ## Requirements
 
-- MacOS with Python3.12+
+- MacOS with Python3.9+
 - Packages: see `requirements.txt`
 
 ## Installation
+
+### Using Pip
+
+```bash
+
+mkdir infinity-mouse
+cd infinity-mouse && python3 -m venv .venv/ && source .venv/bin/activate
+
+pip install infinity-mouse
+
+# Run the script
+infinity-mouse # You may need to allow system access permissions for your terminal app
+
+# Press CTRL+C to exit the script
+```
+
+### Using Source
 
 ```bash
 
@@ -28,13 +45,13 @@ python run.py # You may need to allow system access permissions for your termina
 
 ```bash
 # Run the script with min-max timeout in seconds
-python run.py 80-120
+infinity-mouse 80-120
 
 # Test the script
-python run.py --test
+infinity-mouse --test
 
 # View options
-python run.py -h
+infinity-mouse -h
 
 ```
 
