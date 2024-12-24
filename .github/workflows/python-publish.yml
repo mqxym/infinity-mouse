@@ -103,7 +103,10 @@ jobs:
         id-token: write
     #environment:
     #  name: pypi
-    if: github.event.release.prerelease == false && github.event_name == 'release' && github.event.action == 'published'
+    if: >
+      github.event_name == 'release' &&
+      github.event.action == 'published' &&
+      github.event.release.prerelease == false
 
     steps:
       - name: Download Build Artifacts
@@ -127,7 +130,10 @@ jobs:
       id-token: write
     #environment:
     #  name: pypi
-    if: github.event.release.prerelease == true && github.event_name == 'prerelease' && github.event.action == 'published'
+    if: >
+      github.event_name == 'release' &&
+      github.event.action == 'published' &&
+      github.event.release.prerelease == true
 
     steps:
       - name: Download Build Artifacts
