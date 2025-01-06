@@ -131,14 +131,14 @@ def infinity_movement():
     screen_width, screen_height = pyautogui.size()
     radius = 50
 
-    circle_coordinates = infinity_points(radius, radius * 2)
+    movement_coordinates = infinity_points(radius, radius * 2)
 
     start_x = screen_width / 2 - radius
     start_y = screen_height / 2 - radius
 
     if TEST_MODE:
         print("Started test!")
-        move_coordinates(start_x, start_y, circle_coordinates)
+        move_coordinates(start_x, start_y, movement_coordinates)
         print("Finished...")
         exit(0)
 
@@ -159,7 +159,7 @@ def infinity_movement():
                 elif time.monotonic() - start_time >= delay:
                     break
                 time.sleep(0.3)
-            move_coordinates(start_x, start_y, circle_coordinates)
+            move_coordinates(start_x, start_y, movement_coordinates)
             print(".", end='', flush=True)
 
     except KeyboardInterrupt:

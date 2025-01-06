@@ -27,3 +27,8 @@ setup(
         ],
     },
 )
+
+## Versioning Names:
+# 1.0.0a1 (Alpha release)
+# 1.0.0b1 (Beta release)
+# 1.0.0rc1 (Release candidate)
