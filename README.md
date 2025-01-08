@@ -2,7 +2,7 @@
 
 ![infinity mouse](https://mqxym.de/assets/infinity_mouse.jpg)
 
-Python script that moves the mouse after a set inactivity timeout.
+Python script that moves the mouse ∞ after a set inactivity timeout.
 
 ## Requirements
 
