@@ -8,12 +8,12 @@ from screeninfo import get_monitors
 import argparse
 
 # Ideas:
-# - Set timeout with CLI parameter or env variables
 # - Maybe use last active monitor to draw the infinity symbol on
 
 INACTIVITY_TIMEOUT_MIN = 70
 INACTIVITY_TIMEOUT_MAX = 100
 TEST_MODE = False
+RADIUS = 50
 
 def parse_range(range_str):
     """
@@ -66,7 +66,6 @@ def parse_arguments():
         action='store_true',
         help="Enable test mode."
     )
-    
     args = parser.parse_args()
 
     global INACTIVITY_TIMEOUT_MAX, INACTIVITY_TIMEOUT_MIN, TEST_MODE
@@ -124,20 +123,54 @@ def infinity_points(radius, center_distance):
     return points
 
 
+# Currently only main monitor supported, algorithm below fails on some cases
+def get_active_monitor_middle():
+    return tuple(x / 2 for x in pyautogui.size())
+
+    monitors = get_monitors()
+    
+    if not monitors:
+        return tuple(x / 2 for x in pyautogui.size())
+    
+    mouse_x, mouse_y = pyautogui.position()
+    for monitor in monitors:
+        mon_x_min = monitor.x
+        mon_x_max = monitor.x + monitor.width
+
+        mon_y_min = monitor.y
+        mon_y_max = monitor.y + monitor.height
+       
+        if (mon_x_min <= mouse_x < mon_x_max and
+            mon_y_min <= mouse_y < mon_y_max):
+            # Return the monitor's width and height (which remain the same in any coordinate space)
+            return monitor.width/2+mon_x_min, monitor.height/2
+        
+    return tuple(x / 2 for x in pyautogui.size())
+
+def get_start_points(middle_x, middle_y):
+    return middle_x-RADIUS*2,middle_y-RADIUS
+
+def disable_icon():
+    try:
+        from AppKit import NSApplication, NSApplicationActivationPolicyAccessory
+        app = NSApplication.sharedApplication()
+        app.setActivationPolicy_(NSApplicationActivationPolicyAccessory)
+    except Exception as e:
+        print("Failed to remove dock icon:", e)
+
 def infinity_movement():
     parse_arguments()
+    if sys.platform == "darwin":
+        disable_icon()
 
     # Screen width and height
-    screen_width, screen_height = pyautogui.size()
-    radius = 50
+    active_middle_x, active_middle_y = get_active_monitor_middle()
 
-    movement_coordinates = infinity_points(radius, radius * 2)
-
-    start_x = screen_width / 2 - radius
-    start_y = screen_height / 2 - radius
+    movement_coordinates = infinity_points(RADIUS, RADIUS * 2)
 
     if TEST_MODE:
         print("Started test!")
+        start_x , start_y = get_start_points(active_middle_x, active_middle_y)
         move_coordinates(start_x, start_y, movement_coordinates)
         print("Finished...")
         exit(0)
@@ -145,7 +178,7 @@ def infinity_movement():
     try:
         print("Started!")
         # Test if movement possible
-        move_mouse(screen_width / 2, screen_height / 2)
+        move_mouse(active_middle_x, active_middle_y)
 
         while True:
             delay = random.uniform(INACTIVITY_TIMEOUT_MIN, INACTIVITY_TIMEOUT_MAX)
@@ -161,9 +194,8 @@ def infinity_movement():
                 time.sleep(0.3)
             
             # reset middle before move
-            screen_width, screen_height = pyautogui.size()
-            start_x = screen_width / 2 - radius
-            start_y = screen_height / 2 - radius
+            active_middle_x, active_middle_y = get_active_monitor_middle()
+            start_x , start_y = get_start_points(active_middle_x, active_middle_y)
 
             move_coordinates(start_x, start_y, movement_coordinates)
             print(".", end='', flush=True)
