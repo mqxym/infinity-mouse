@@ -15,15 +15,31 @@ Python script that moves the mouse in an ∞ pattern after a set inactivity time
 
 ### Using Pip
 
-```bash
+#### Linux / macOS
 
+```bash
 mkdir infinity-mouse
 cd infinity-mouse && python3 -m venv .venv/ && source .venv/bin/activate
 
 pip install infinity-mouse
 
 # Run the script
-infinity-mouse # You may need to allow system access permissions for your terminal app
+infinity-mouse # You may need to allow system access permissions on macOS for your terminal app
+
+# Press CTRL+C to exit the script
+```
+
+#### Windows (PowerShell)
+
+```powershell
+mkdir infinity-mouse
+cd infinity-mouse
+python.exe -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+pip install infinity-mouse
+
+# Run the script
 python -m infinity_mouse
 
 # Press CTRL+C to exit the script
@@ -31,14 +47,30 @@ python -m infinity_mouse
 
 ### Using Source
 
-```bash
+#### Linux / macOS
 
+```bash
 git clone https://github.com/mqxym/infinity-mouse
 cd infinity-mouse && python3 -m venv .venv/ && source .venv/bin/activate && pip install -r requirements.txt
 
 # Run the script
 python run.py # You may need to allow system access permissions for your terminal app
 python -m infinity_mouse
+# Press CTRL+C to exit the script
+```
+
+#### Windows (PowerShell)
+
+```powershell
+git clone https://github.com/mqxym/infinity-mouse
+cd infinity-mouse
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+# Run the script
+python run.py
+
 # Press CTRL+C to exit the script
 ```
 
