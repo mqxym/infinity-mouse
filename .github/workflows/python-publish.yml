@@ -14,16 +14,17 @@ permissions:
 jobs:
   test:
     name: Test on Multiple Python Versions
-    runs-on: macos-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12','3.13']
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.10', '3.11', '3.12','3.13',"3.14"]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
     
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
     
@@ -33,19 +34,24 @@ jobs:
           pip install -r requirements.txt
           # pip install flake8
 
+      - name: Install Linux Test System Dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
       - name: Run Script in Test Mode
+        if: runner.os != 'Linux'
         run: |
           python run.py --test
         continue-on-error: true  # Avoid failing workflow due to timeout
+
+      - name: Run Script in Test Mode (Linux via Xvfb)
+        if: runner.os == 'Linux'
+        run: |
+          xvfb-run -a python run.py --test
+        continue-on-error: true  # Avoid failing workflow due to timeout
     
-    #  - name: Lint with flake8
-    #    run: |
-    #      flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-    #      flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    #
-    #  - name: Run Tests
-    #    run: |
-    #      python -m unittest discover tests
   
   build:
     name: Build Package
@@ -55,10 +61,10 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
@@ -66,32 +72,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel twine
 
-      - name: Build Prerelease Distributions
-        if: github.event.release.prerelease == true
+      - name: Build Distributions
         run: |
           python setup.py sdist bdist_wheel
-        env:
-          BUILD_TYPE: prerelease
 
-      - name: Upload Prerelease Artifacts
-        if: github.event.release.prerelease == true
-        uses: actions/upload-artifact@v4
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v7
         with:
-          name: prerelease-dist
-          path: dist/
-
-      - name: Build Release Distributions
-        if: github.event.release.prerelease == false
-        run: |
-          python setup.py sdist bdist_wheel
-        env:
-          BUILD_TYPE: release
-
-      - name: Upload Release Artifacts
-        if: github.event.release.prerelease == false
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-dist
+          name: dist
           path: dist/
 
   publish:
@@ -104,14 +92,13 @@ jobs:
     #  name: pypi
     if: >
       github.event_name == 'release' &&
-      github.event.action == 'published' &&
-      !github.event.release.prerelease
+      github.event.action == 'published'
 
     steps:
       - name: Download Build Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
-          name: release-dist
+          name: dist
           path: dist/
 
       - name: Publish to PyPI
@@ -119,37 +106,3 @@ jobs:
         with:
           packages-dir: dist
 
-  publish-prerelease:
-    name: Publish Pre-release to TestPyPI
-    runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      id-token: write
-    #environment:
-    #  name: pypi
-    if: >
-      github.event_name == 'release' &&
-      github.event.action == 'published' &&
-      github.event.release.prerelease
-
-    steps:
-      - name: Download Build Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: prerelease-dist
-          path: dist/
-
-      - name: Publish to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: dist/
-
-  #notify:
-  #  name: Notify Release
-  #  runs-on: ubuntu-latest
-  #  needs: [publish, publish-prerelease]
-  #  steps:
-  #    - name: Send Release Notification
-  #      uses: some/notification-action@v1
-  #      with:
-  #        message: "New release ${{ github.event.release.name }} has been published to PyPI."

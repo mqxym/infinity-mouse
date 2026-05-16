@@ -1,94 +1,234 @@
-import pyautogui
+#!/usr/bin/env python3
 import sys
 import random
 import time
 import math
-import Quartz
-from screeninfo import get_monitors
 import argparse
 
-# Ideas:
-# - Maybe use last active monitor to draw the infinity symbol on
+import pyautogui
 
+# Optional dependency (only used if you re-enable multi-monitor logic)
+# from screeninfo import get_monitors
+
+# ----------------------------
+# Config
+# ----------------------------
 INACTIVITY_TIMEOUT_MIN = 70
 INACTIVITY_TIMEOUT_MAX = 100
 TEST_MODE = False
 RADIUS = 50
 
-def parse_range(range_str):
+# ----------------------------
+# Arg parsing
+# ----------------------------
+def parse_range(range_str: str):
     """
     Parse and validate the range string in the format 'min-max'.
-    
-    Args:
-        range_str (str): The range string to parse.
-    
-    Returns:
-        tuple: A tuple of two integers (a, b) if valid.
-    
-    Raises:
-        argparse.ArgumentTypeError: If the format is incorrect or constraints are not met.
+    Returns: (min, max) as ints
     """
     try:
-        parts = range_str.split('-')
+        parts = range_str.split("-")
         if len(parts) != 2:
             raise ValueError
-        a_str, b_str = parts
-        a = int(a_str)
-        b = int(b_str)
+        a = int(parts[0])
+        b = int(parts[1])
     except ValueError:
         raise argparse.ArgumentTypeError(
             f"Range '{range_str}' is invalid. It must be in the format 'min-max' where min and max are integers."
         )
-    
+
     if not (1 <= a < b <= 1199):
         raise argparse.ArgumentTypeError(
             f"Invalid range '{range_str}'. Ensure that 1 <= min < max <= 1199."
         )
-    
+
     return (a, b)
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Moves the mouse after a set inactivity timeout."
     )
-    
-    # Positional argument for the timeout range
+
     parser.add_argument(
-        'range',
+        "range",
         type=parse_range,
-        nargs='?',
+        nargs="?",
         default=None,
-        help="The timeout range in the format 'min-max' in seconds where 1 <= min < max <= 1199."
+        help="The timeout range in the format 'min-max' in seconds where 1 <= min < max <= 1199.",
     )
-    
+
     parser.add_argument(
-        '--test',
-        action='store_true',
-        help="Enable test mode."
+        "--test",
+        action="store_true",
+        help="Enable test mode.",
     )
+
     args = parser.parse_args()
 
     global INACTIVITY_TIMEOUT_MAX, INACTIVITY_TIMEOUT_MIN, TEST_MODE
-    
+
     if args.range:
-        min, max = args.range
-        INACTIVITY_TIMEOUT_MAX = max
-        INACTIVITY_TIMEOUT_MIN = min
+        mn, mx = args.range
+        INACTIVITY_TIMEOUT_MIN = mn
+        INACTIVITY_TIMEOUT_MAX = mx
+
     TEST_MODE = args.test
 
-# Function to move the mouse with Quartz lib
-def move_mouse(x, y):
-    mouse_event = Quartz.CGEventCreateMouseEvent(None, Quartz.kCGEventMouseMoved, (x, y), 0)
-    Quartz.CGEventPost(Quartz.kCGHIDEventTap, mouse_event)
 
-def move_coordinates(start_x, start_y, coordinates): 
+# ----------------------------
+# Platform mouse movement
+# ----------------------------
+_MOVE_BACKEND = None
+
+def _setup_mouse_backend():
+    """
+    Selects a low-level-ish backend per platform:
+      - macOS: Quartz.CGEventCreateMouseEvent + CGEventPost
+      - Windows: SendInput (ctypes)
+    - Linux: python-xlib + XTEST
+    - Other/Unavailable: raise backend-not-found error
+    Sets global _MOVE_BACKEND callable: move_mouse(x,y)
+    """
+    global _MOVE_BACKEND
+
+    if sys.platform == "darwin":
+        # macOS Quartz backend
+        import Quartz  # type: ignore
+
+        def move_mouse_mac(x, y):
+            ev = Quartz.CGEventCreateMouseEvent(
+                None, Quartz.kCGEventMouseMoved, (int(x), int(y)), 0
+            )
+            Quartz.CGEventPost(Quartz.kCGHIDEventTap, ev)
+
+        _MOVE_BACKEND = move_mouse_mac
+        return
+
+    if sys.platform == "win32":
+        # Windows SendInput backend (supports multi-monitor / negative coords)
+        import ctypes
+        from ctypes import wintypes
+
+        user32 = ctypes.WinDLL("user32", use_last_error=True)
+
+        # (Optional but helpful) Make process DPI-aware so coordinates match what Windows uses.
+        # This avoids "cursor moves to wrong spot" under scaling in many setups.
+        try:
+            # Per-monitor DPI awareness (Win 8.1+ / 10+)
+            shcore = ctypes.WinDLL("shcore", use_last_error=True)
+            shcore.SetProcessDpiAwareness(2)  # PROCESS_PER_MONITOR_DPI_AWARE
+        except Exception:
+            try:
+                user32.SetProcessDPIAware()
+            except Exception:
+                pass
+        
+        ULONG_PTR = wintypes.WPARAM
+
+        INPUT_MOUSE = 0
+        MOUSEEVENTF_MOVE = 0x0001
+        MOUSEEVENTF_ABSOLUTE = 0x8000
+        MOUSEEVENTF_VIRTUALDESK = 0x4000
+
+        SM_XVIRTUALSCREEN = 76
+        SM_YVIRTUALSCREEN = 77
+        SM_CXVIRTUALSCREEN = 78
+        SM_CYVIRTUALSCREEN = 79
+
+        class MOUSEINPUT(ctypes.Structure):
+            _fields_ = [
+                ("dx", wintypes.LONG),
+                ("dy", wintypes.LONG),
+                ("mouseData", wintypes.DWORD),
+                ("dwFlags", wintypes.DWORD),
+                ("time", wintypes.DWORD),
+                ("dwExtraInfo", ULONG_PTR),
+            ]
+
+        class INPUT(ctypes.Structure):
+            _fields_ = [("type", wintypes.DWORD), ("mi", MOUSEINPUT)]
+
+        def _get_virtual_screen_rect():
+            vx = user32.GetSystemMetrics(SM_XVIRTUALSCREEN)
+            vy = user32.GetSystemMetrics(SM_YVIRTUALSCREEN)
+            vw = user32.GetSystemMetrics(SM_CXVIRTUALSCREEN)
+            vh = user32.GetSystemMetrics(SM_CYVIRTUALSCREEN)
+            return vx, vy, vw, vh
+
+        def move_mouse_win(x, y):
+            vx, vy, vw, vh = _get_virtual_screen_rect()
+
+            # Normalize to 0..65535 across *virtual desktop* (inclusive)
+            nx = int((int(x) - vx) * 65535 / (vw - 1)) if vw > 1 else 0
+            ny = int((int(y) - vy) * 65535 / (vh - 1)) if vh > 1 else 0
+
+            inp = INPUT(
+                type=INPUT_MOUSE,
+                mi=MOUSEINPUT(
+                    dx=nx,
+                    dy=ny,
+                    mouseData=0,
+                    dwFlags=MOUSEEVENTF_MOVE
+                    | MOUSEEVENTF_ABSOLUTE
+                    | MOUSEEVENTF_VIRTUALDESK,
+                    time=0,
+                    dwExtraInfo=0,
+                ),
+            )
+
+            n = user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(inp))
+            if n != 1:
+                raise ctypes.WinError(ctypes.get_last_error())
+
+        _MOVE_BACKEND = move_mouse_win
+        return
+
+    if sys.platform.startswith("linux"):
+        # Prefer python-xlib + XTEST on Linux for low-level event injection on X11.
+        try:
+            from Xlib import display as xdisplay  # type: ignore
+            from Xlib.ext import xtest  # type: ignore
+
+            disp = xdisplay.Display()
+            root = disp.screen().root
+
+            def move_mouse_linux_xlib(x, y):
+                root.warp_pointer(int(x), int(y))
+                xtest.fake_input(disp, 6, 0, x=int(x), y=int(y))
+                disp.sync()
+
+            _MOVE_BACKEND = move_mouse_linux_xlib
+            return
+        except Exception:
+            pass
+
+    message = (
+        "No compatible mouse backend found. "
+        "On Linux/X11 install python-xlib; "
+        "on macOS ensure Quartz is available; on Windows SendInput is built-in."
+    )
+    print(f"Warning: {message}", file=sys.stderr)
+    raise RuntimeError(message)
+
+
+def move_mouse(x, y):
+    if _MOVE_BACKEND is None:
+        _setup_mouse_backend()
+    _MOVE_BACKEND(x, y)
+
+
+# ----------------------------
+# Movement path logic
+# ----------------------------
+def move_coordinates(start_x, start_y, coordinates):
     for x, y in coordinates:
         move_mouse(int(start_x + x), int(start_y + y))
         time.sleep(0.003)
 
+
 def infinity_points(radius, center_distance):
     points = []
-    # Calculate the centers of the two circles
     center1_x, center2_x = center_distance // 2, 3 * center_distance // 2
     center_y = radius
 
@@ -123,67 +263,61 @@ def infinity_points(radius, center_distance):
     return points
 
 
-# Currently only main monitor supported, algorithm below fails on some cases
+# ----------------------------
+# Monitor / positioning helpers
+# ----------------------------
 def get_active_monitor_middle():
-    return tuple(x / 2 for x in pyautogui.size())
+    w, h = pyautogui.size()
+    return (w / 2, h / 2)
 
-    monitors = get_monitors()
-    
-    if not monitors:
-        return tuple(x / 2 for x in pyautogui.size())
-    
-    mouse_x, mouse_y = pyautogui.position()
-    for monitor in monitors:
-        mon_x_min = monitor.x
-        mon_x_max = monitor.x + monitor.width
-
-        mon_y_min = monitor.y
-        mon_y_max = monitor.y + monitor.height
-       
-        if (mon_x_min <= mouse_x < mon_x_max and
-            mon_y_min <= mouse_y < mon_y_max):
-            # Return the monitor's width and height (which remain the same in any coordinate space)
-            return monitor.width/2+mon_x_min, monitor.height/2
-        
-    return tuple(x / 2 for x in pyautogui.size())
 
 def get_start_points(middle_x, middle_y):
-    return middle_x-RADIUS*2,middle_y-RADIUS
+    return middle_x - RADIUS * 2, middle_y - RADIUS
 
-def disable_icon():
+
+def disable_icon_macos():
     try:
-        from AppKit import NSApplication, NSApplicationActivationPolicyAccessory
+        from AppKit import NSApplication, NSApplicationActivationPolicyAccessory  # type: ignore
+
         app = NSApplication.sharedApplication()
         app.setActivationPolicy_(NSApplicationActivationPolicyAccessory)
     except Exception as e:
         print("Failed to remove dock icon:", e)
 
+
+# ----------------------------
+# Main loop
+# ----------------------------
 def infinity_movement():
     parse_arguments()
+
     if sys.platform == "darwin":
-        disable_icon()
+        disable_icon_macos()
 
-    # Screen width and height
+    # init backend once
+    _setup_mouse_backend()
+
     active_middle_x, active_middle_y = get_active_monitor_middle()
-
     movement_coordinates = infinity_points(RADIUS, RADIUS * 2)
 
     if TEST_MODE:
         print("Started test!")
-        start_x , start_y = get_start_points(active_middle_x, active_middle_y)
+        start_x, start_y = get_start_points(active_middle_x, active_middle_y)
         move_coordinates(start_x, start_y, movement_coordinates)
         print("Finished...")
-        exit(0)
+        sys.exit(0)
 
     try:
         print("Started!")
-        # Test if movement possible
+
+        # Test if movement possible (permissions etc.)
         move_mouse(active_middle_x, active_middle_y)
 
         while True:
             delay = random.uniform(INACTIVITY_TIMEOUT_MIN, INACTIVITY_TIMEOUT_MAX)
             last_pos = pyautogui.position()
             start_time = time.monotonic()
+
             while True:
                 current_pos = pyautogui.position()
                 if current_pos != last_pos:
@@ -192,13 +326,13 @@ def infinity_movement():
                 elif time.monotonic() - start_time >= delay:
                     break
                 time.sleep(0.3)
-            
+
             # reset middle before move
             active_middle_x, active_middle_y = get_active_monitor_middle()
-            start_x , start_y = get_start_points(active_middle_x, active_middle_y)
+            start_x, start_y = get_start_points(active_middle_x, active_middle_y)
 
             move_coordinates(start_x, start_y, movement_coordinates)
-            print(".", end='', flush=True)
+            print(".", end="", flush=True)
 
     except KeyboardInterrupt:
         print("\nExit...")

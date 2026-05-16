@@ -6,8 +6,10 @@ Python script that moves the mouse in an ∞ pattern after a set inactivity time
 
 ## Requirements
 
-- MacOS with Python3.9+
+- Python 3.9+
+- macOS, Windows, or Linux (X11)
 - Packages: see `requirements.txt`
+- Linux note: on X11 the script uses `python-xlib` + XTEST for low-level mouse events; if this backend is unavailable it exits with a warning
 
 ## Installation
 
@@ -60,7 +62,4 @@ infinity-mouse -h
 - Learn automation like mouse movements and processing of inputs and HMIs
 - Learn pattern creation with sinus functions for the infinity movement pattern
 - Build and test CI/CD workflows
-
-## Future Additions
-
-- Linux and Windows support?
+- Cross-platform Python development

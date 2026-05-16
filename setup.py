@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='infinity-mouse',
-    version='0.2.4',
+    version='0.2.5rc1',
     author='mqxym',
     author_email='maxim@omg.lol',
     description='Mouse infinity movement after timeout.',
@@ -12,13 +12,16 @@ setup(
     packages=find_packages(),
     classifiers=[
         'License :: OSI Approved :: MIT License',
+        'Operating System :: MacOS',
+        'Operating System :: Microsoft :: Windows',
+        'Operating System :: POSIX :: Linux',
     ],
     python_requires='>=3.9',
-    platforms=['MacOS'],
+    platforms=['MacOS', 'Windows', 'Linux'],
     install_requires=[
-        'pyobjc-framework-Quartz',
+        "pyobjc-framework-Quartz; platform_system == 'Darwin'",
+        "python-xlib; platform_system == 'Linux'",
         'pyautogui',
-        'screeninfo',
     ],
     py_modules=['run'],
     entry_points={
