@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='infinity-mouse',
-    version='0.2.5rc1',
+    version='0.2.5rc2',
     author='mqxym',
     author_email='maxim@omg.lol',
     description='Mouse infinity movement after timeout.',
