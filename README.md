@@ -24,6 +24,7 @@ pip install infinity-mouse
 
 # Run the script
 infinity-mouse # You may need to allow system access permissions for your terminal app
+python -m infinity_mouse
 
 # Press CTRL+C to exit the script
 ```
@@ -37,7 +38,7 @@ cd infinity-mouse && python3 -m venv .venv/ && source .venv/bin/activate && pip 
 
 # Run the script
 python run.py # You may need to allow system access permissions for your terminal app
-
+python -m infinity_mouse
 # Press CTRL+C to exit the script
 ```
 
@@ -48,12 +49,15 @@ python run.py # You may need to allow system access permissions for your termina
 ```bash
 # Run the script with min-max timeout in seconds
 infinity-mouse 80-120
+python -m infinity_mouse 80-120
 
 # Test the script
 infinity-mouse --test
+python -m infinity_mouse --test
 
 # View options
 infinity-mouse -h
+python -m infinity_mouse -h
 
 ```
 
