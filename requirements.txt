@@ -1,4 +1,3 @@
 pyobjc-framework-Quartz; platform_system == 'Darwin'
 python-xlib; platform_system == 'Linux'
 pyautogui
-screeninfo
